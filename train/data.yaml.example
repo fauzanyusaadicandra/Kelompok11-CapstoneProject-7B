@@ -1,0 +1,14 @@
+# Salin menjadi data.yaml lalu sesuaikan path dan nama kelas dengan dataset Anda.
+# Nama kelas dinormalisasi otomatis oleh aplikasi (huruf besar/kecil, spasi, '-' diabaikan):
+#   Person | Hardhat / Helmet | Safety Vest / Vest | NO-Hardhat | NO-Safety Vest  -> dikenali
+#   kelas lain (Mask, Safety Cone, machinery, ...) diabaikan.
+path: ../datasets/ppe
+train: images/train
+val: images/val
+test: images/test
+names:
+  0: Person
+  1: Hardhat
+  2: Safety Vest
+  3: NO-Hardhat
+  4: NO-Safety Vest

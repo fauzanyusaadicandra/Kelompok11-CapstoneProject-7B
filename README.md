@@ -1,4 +1,6 @@
-# APD Monitor - Sistem Monitoring Kepatuhan APD Berbasis Computer Vision (YOLO)
+# APD Monitor
+
+**Pengembangan Sistem Monitoring Kepatuhan Penggunaan Alat Pelindung Diri (APD) Berbasis Image Processing Menggunakan YOLO untuk Mendukung Keselamatan Kerja**
 
 **NEXUS AI - Kelompok 11 - Capstone Project 7B**
 Fauzan Yusa Adicandra (AI/ML & koordinator) | Muhammad Achlaken Al-Hakim (backend & database) | Muhammad Iqbal Kurnia Adjie (frontend & QA)
@@ -91,7 +93,8 @@ app/reports.py    ekspor CSV & PDF (ReportLab)
 app/security.py   hash password PBKDF2 + token sesi HMAC
 app/static/       dashboard (HTML, Bootstrap, Chart.js, JavaScript)
 train/            train_yolo.py, evaluate.py, data.yaml.example
-tests/            test_core.py (aturan, keamanan, pipeline), test_api.py (uji fungsional)
+tests/            test_rules_pipeline.py (Fauzan), test_backend_unit.py (Achlaken), test_api.py (Iqbal)
+docs/             MODEL_DAN_DATASET.md, API.md, DATABASE.md, PENGUJIAN.md, mockup/
 data/             apd.db, snapshots/, uploads/  (dibuat otomatis)
 ```
 
@@ -99,7 +102,7 @@ data/             apd.db, snapshots/, uploads/  (dibuat otomatis)
 ```bash
 pytest -v
 ```
-`test_core.py` menguji tiga skenario wajib (APD lengkap, tanpa helm, tanpa vest), keamanan, pipeline, serta ekspor CSV/PDF. `test_api.py` menguji alur login -> deteksi -> riwayat -> laporan secara end-to-end (mode Demo).
+`test_rules_pipeline.py` menguji tiga skenario wajib (APD lengkap, tanpa helm, tanpa vest) dan pipeline; `test_backend_unit.py` menguji keamanan serta ekspor CSV/PDF; `test_api.py` menguji alur login -> deteksi -> riwayat -> laporan secara end-to-end (mode Demo).
 
 ## 9. Pemetaan ke dokumen perancangan
 | Kebutuhan | Implementasi |
@@ -124,3 +127,10 @@ pytest -v
 
 ## 11. Batasan (sesuai scope)
 Hanya helm dan safety vest; tanpa integrasi CCTV industri, absensi/identitas pekerja, dan analisis risiko. Bila model tidak menyediakan ID tracking, beberapa pekerja dengan jenis pelanggaran sama dihitung sebagai satu pada pencatatan. Tingkat kepatuhan pada laporan dihitung dari cuplikan jumlah pekerja tiap 5 detik. Nilai `SECRET_KEY` dan password bawaan wajib diganti bila diakses lewat jaringan.
+
+## 12. Pembagian kontribusi
+| Anggota | Bagian |
+|---|---|
+| Fauzan Yusa Adicandra | `app/config.py`, `rules.py`, `detector.py`, `pipeline.py`, `train/`, `docs/MODEL_DAN_DATASET.md`, setup repository |
+| Muhammad Achlaken Al-Hakim | `app/main.py`, `database.py`, `crud.py`, `security.py`, `reports.py`, `docs/API.md`, `docs/DATABASE.md` |
+| Muhammad Iqbal Kurnia Adjie | `app/static/` (dashboard), `tests/test_api.py`, `docs/PENGUJIAN.md`, `docs/mockup/` |

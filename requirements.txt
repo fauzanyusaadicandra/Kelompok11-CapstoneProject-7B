@@ -1,0 +1,10 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
+sqlalchemy>=2.0
+opencv-python>=4.9
+numpy>=1.26
+reportlab>=4.0
+ultralytics>=8.2        # YOLO (sudah menarik PyTorch). Tidak wajib untuk mode Demo.
+pytest>=8.0
+httpx>=0.27             # dibutuhkan pytest untuk menguji API
