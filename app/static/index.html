@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APD Monitor | NEXUS AI</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+  :root { --navy:#1e3a5f; --amb:#f59e0b; }
+  .topbar { background:var(--navy); }
+  .tab.active { background:var(--amb) !important; color:#1f2937 !important; font-weight:600; }
+  .feed-box { background:#111; border-radius:.5rem; aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; color:#9ca3af; overflow:hidden; text-align:center; padding:1rem; }
+  .feed-box img { width:100%; height:100%; object-fit:contain; }
+  .stat .val { font-size:2rem; font-weight:700; line-height:1.1; }
+  .alerts { max-height:380px; overflow:auto; }
+  .thumb { width:60px; height:40px; object-fit:cover; border-radius:4px; cursor:pointer; }
+  .dot { display:inline-block; width:9px; height:9px; border-radius:50%; background:#dc2626; margin-right:6px; animation:b 1s infinite; }
+  @keyframes b { 50% { opacity:.2; } }
+</style>
+</head>
+<body class="bg-body-tertiary">
+
+<!-- ================= LOGIN (FR-08) ================= -->
+<div id="loginView" class="container d-flex align-items-center justify-content-center" style="min-height:100vh">
+  <div class="card shadow-sm" style="width:min(380px,100%)">
+    <div class="card-body p-4">
+      <h4 class="mb-0">APD Monitor</h4>
+      <p class="text-secondary small">Sistem Monitoring Kepatuhan Penggunaan APD Berbasis Image Processing Menggunakan YOLO untuk Mendukung Keselamatan Kerja<br>NEXUS AI - Kelompok 11</p>
+      <form id="loginForm">
+        <label class="form-label small mb-1">Username</label>
+        <input id="lu" class="form-control mb-3" autocomplete="username" required>
+        <label class="form-label small mb-1">Password</label>
+        <input id="lp" type="password" class="form-control mb-3" autocomplete="current-password" required>
+        <div id="lerr" class="alert alert-danger py-2 d-none"></div>
+        <button class="btn btn-primary w-100" style="background:var(--navy);border-color:var(--navy)">Masuk</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ================= APLIKASI ================= -->
+<div id="appView" class="d-none">
+  <nav class="topbar py-2 px-3 d-flex flex-wrap align-items-center gap-2">
+    <span class="text-white fw-bold me-auto">APD Monitor <small class="opacity-75 fw-normal">| NEXUS AI</small></span>
+    <div class="d-flex gap-1 flex-wrap">
+      <button class="btn btn-sm text-white tab" data-view="live">Live Monitoring</button>
+      <button class="btn btn-sm text-white tab" data-view="hist">Riwayat Pelanggaran</button>
+      <button class="btn btn-sm text-white tab" data-view="rep">Laporan Kepatuhan</button>
+    </div>
+    <span class="text-white-50 small ms-2" id="who"></span>
+    <button id="logout" class="btn btn-sm btn-outline-light">Keluar</button>
+  </nav>
+
+  <main class="container py-3">
+
+    <!-- ---------- LIVE ---------- -->
+    <section id="v-live">
+      <div class="card mb-3"><div class="card-body">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-3">
+            <label class="form-label small mb-1">Sumber video</label>
+            <select id="kind" class="form-select">
+              <option value="demo">Demo (tanpa model)</option>
+              <option value="webcam">Webcam / kamera USB</option>
+              <option value="file">Unggah file video</option>
+              <option value="url">Kamera IP / smartphone (URL)</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-5">
+            <div id="f-demo" class="small text-secondary">Adegan simulasi 3 pekerja untuk mencoba dashboard tanpa model YOLO.</div>
+            <input id="f-webcam" type="number" min="0" value="0" class="form-control d-none" placeholder="Indeks kamera (0 = default)">
+            <input id="f-file" type="file" accept="video/*" class="form-control d-none">
+            <input id="f-url" class="form-control d-none" placeholder="mis. http://192.168.1.5:8080/video atau rtsp://...">
+          </div>
+          <div class="col-12 col-md-4 d-flex gap-2">
+            <button id="start" class="btn btn-success flex-fill">Mulai</button>
+            <button id="stop" class="btn btn-outline-danger flex-fill">Hentikan</button>
+          </div>
+        </div>
+        <div id="serr" class="alert alert-danger py-2 mt-3 mb-0 d-none"></div>
+      </div></div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-6 col-lg-3"><div class="card stat"><div class="card-body"><div class="text-secondary small">Pekerja terdeteksi</div><div class="val" id="sW">0</div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card stat"><div class="card-body"><div class="text-secondary small">Patuh</div><div class="val text-success" id="sC">0</div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card stat"><div class="card-body"><div class="text-secondary small">Pelanggaran (saat ini)</div><div class="val text-danger" id="sV">0</div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card stat"><div class="card-body"><div class="text-secondary small">FPS / Delay</div><div class="val fs-4 pt-2" id="sF">-</div><div class="small text-secondary" id="sT"></div></div></div></div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-lg-8"><div class="card"><div class="card-body">
+          <div class="d-flex justify-content-between mb-2"><strong id="feedTitle">Live feed</strong><span id="mode" class="badge text-bg-secondary">idle</span></div>
+          <div class="feed-box"><img id="feed" class="d-none" alt="live feed"><span id="feedPh">Belum ada sumber yang berjalan. Pilih sumber video lalu tekan <b>Mulai</b>.</span></div>
+        </div></div></div>
+        <div class="col-lg-4"><div class="card h-100"><div class="card-body">
+          <div class="d-flex justify-content-between mb-2"><strong>Notifikasi pelanggaran</strong><span class="badge text-bg-danger" id="today">0 hari ini</span></div>
+          <div class="alerts list-group list-group-flush" id="alerts"><div class="text-secondary small">Belum ada pelanggaran tercatat.</div></div>
+        </div></div></div>
+      </div>
+    </section>
+
+    <!-- ---------- RIWAYAT ---------- -->
+    <section id="v-hist" class="d-none">
+      <form id="hForm" class="row g-2 align-items-end mb-3">
+        <div class="col-6 col-md-3"><label class="form-label small mb-1">Dari tanggal</label><input id="hFrom" type="date" class="form-control"></div>
+        <div class="col-6 col-md-3"><label class="form-label small mb-1">Sampai tanggal</label><input id="hTo" type="date" class="form-control"></div>
+        <div class="col-12 col-md-3"><label class="form-label small mb-1">Jenis pelanggaran</label>
+          <select id="hJenis" class="form-select"><option value="">Semua jenis</option><option>Tanpa Helm</option><option>Tanpa Safety Vest</option><option>Tanpa Helm &amp; Vest</option></select></div>
+        <div class="col-12 col-md-3 d-flex gap-2"><button class="btn btn-primary flex-fill" style="background:var(--navy);border-color:var(--navy)">Terapkan</button><button type="button" id="hReset" class="btn btn-outline-secondary">Reset</button></div>
+      </form>
+      <div class="card"><div class="table-responsive"><table class="table align-middle mb-0">
+        <thead><tr><th>Waktu</th><th>Sumber</th><th>Pekerja</th><th>Jenis pelanggaran</th><th>Bukti</th></tr></thead>
+        <tbody id="hBody"></tbody></table></div></div>
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <span class="small text-secondary" id="hInfo"></span>
+        <div class="btn-group"><button id="hPrev" class="btn btn-outline-secondary btn-sm">Sebelumnya</button><button id="hNext" class="btn btn-outline-secondary btn-sm">Berikutnya</button></div>
+      </div>
+    </section>
+
+    <!-- ---------- LAPORAN ---------- -->
+    <section id="v-rep" class="d-none">
+      <form id="rForm" class="row g-2 align-items-end mb-3">
+        <div class="col-6 col-md-3"><label class="form-label small mb-1">Dari tanggal</label><input id="rFrom" type="date" class="form-control" required></div>
+        <div class="col-6 col-md-3"><label class="form-label small mb-1">Sampai tanggal</label><input id="rTo" type="date" class="form-control" required></div>
+        <div class="col-12 col-md-6 d-flex gap-2 flex-wrap">
+          <button class="btn btn-primary" style="background:var(--navy);border-color:var(--navy)">Tampilkan</button>
+          <a id="exCsv" class="btn btn-outline-secondary">Ekspor CSV</a>
+          <a id="exPdf" class="btn btn-outline-secondary">Ekspor PDF</a>
+        </div>
+      </form>
+      <div class="row g-3 mb-3">
+        <div class="col-md-4"><div class="card stat"><div class="card-body"><div class="text-secondary small">Total pelanggaran</div><div class="val text-danger" id="rTot">0</div></div></div></div>
+        <div class="col-md-4"><div class="card stat"><div class="card-body"><div class="text-secondary small">Tingkat kepatuhan</div><div class="val text-success" id="rRate">-</div></div></div></div>
+        <div class="col-md-4"><div class="card stat"><div class="card-body"><div class="text-secondary small">Jenis terbanyak</div><div class="val fs-5 pt-2" id="rTop">-</div></div></div></div>
+      </div>
+      <div class="row g-3">
+        <div class="col-lg-8"><div class="card"><div class="card-body"><strong>Pelanggaran per hari</strong><canvas id="cDay" height="130"></canvas></div></div></div>
+        <div class="col-lg-4"><div class="card"><div class="card-body"><strong>Per jenis</strong><canvas id="cType" height="220"></canvas></div></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal fade" id="snapModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content">
+  <div class="modal-header"><h6 class="modal-title" id="snapTitle">Bukti pelanggaran</h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body p-0"><img id="snapImg" class="w-100" alt="snapshot"></div>
+</div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
